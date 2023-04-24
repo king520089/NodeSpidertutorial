@@ -1,0 +1,41 @@
+const { log } = require('console');
+
+let [axios, fs] = [require('axios'), require('fs')];
+class Book {
+    constructor(url) {
+        this.url = url;
+    }
+    parseWeb() {
+        axios.get(this.url).then(response => {
+            if (response.status == 200) {
+                let string = response.data;
+                let pattern = string.match(/<ul>(.*?)<\/ul>/s)[1];
+                let title = pattern.match(/<span>(.*?)<\/span>/g);
+                for (let item of title) {
+                    let bookTitle = item.match(/<span><a\s.*>(.*?)<\/a><\/span>/s)[1];
+                    let parseUrl = item.match(/<span><a\s.*\W"(.*?)">.*<\/a><\/span>/s)[1];
+                    axios.get(parseUrl).then(response => {
+                        if (response.status == 200) {
+                            let string = response.data;
+                            let pContent = string.match(/<div\s.*\W"contson">(.*?)<\/div>/s)[1]
+                            let content = pContent.replace(/<p>/g, "").replace(/<\/p>/g, "");
+                            fs.writeFile("D://穆天子传.txt", `${bookTitle}${content}`, { flag: "a", encoding: "utf-8" }, (error) => {
+                                if (error) {
+                                    console.log(error.message);
+                                } else {
+                                    console.log("文件下载成功");
+                                }
+                            });
+                        } else {
+                            console.log(`响应请求失败`);
+                        }
+                    })
+                }
+            } else {
+                console.log("网页请求失败");
+            }
+        })
+    }
+}
+let b = new Book("https://so.gushiwen.cn/guwen/book_46653FD803893E4F4E9CADD37301AA08.aspx");
+b.parseWeb();
